@@ -33,16 +33,23 @@ public class GoogleSheetsAdaptor {
 
     public void writeBoxScores(List<BoxScoreEntry> boxScoreEntryList) throws IOException {
         List<Request> requests = new ArrayList<>();
+        int rowsAppended = 0;
+        int maxRow = maxRow();
         for(BoxScoreEntry boxScoreEntry : boxScoreEntryList) {
+            int row = getRow(boxScoreEntry.getPlayer(), boxScoreEntry.getDate(), rowsAppended);
+            if(row >= maxRow) {
+                rowsAppended++;
+            }
             requests.add(new Request()
                     .setUpdateCells(new UpdateCellsRequest()
                             .setStart(new GridCoordinate()
                                     .setSheetId(boxScoreSheetId)
-                                    .setRowIndex(getRow(boxScoreEntry.getPlayer(), boxScoreEntry.getDate(), 0))
+                                    .setRowIndex(row)
                                     .setColumnIndex(0))
                             .setRows(Collections.singletonList(
                                     new RowData().setValues(buildBoxScoreRow(boxScoreEntry))))
                             .setFields("userEnteredValue,userEnteredFormat.backgroundColor")));
+
         }
         BatchUpdateSpreadsheetRequest batchUpdateRequest = new BatchUpdateSpreadsheetRequest()
                 .setRequests(requests);
@@ -50,7 +57,7 @@ public class GoogleSheetsAdaptor {
                 .execute();
     }
 
-    private Integer getRow(String player, LocalDate date, int appendedSoFar) throws IOException {
+    private Integer getRow(String player, LocalDate date, int rowsAppended) throws IOException {
         ValueRange response = sheetsClient.spreadsheets().values()
                 .get(spreadsheetId, RANGE)
                 .execute();
@@ -59,7 +66,14 @@ public class GoogleSheetsAdaptor {
                 return i;
             }
         }
-        return response.getValues().size() + appendedSoFar;
+        return response.getValues().size() + rowsAppended;
+    }
+
+    private Integer maxRow() throws IOException {
+        ValueRange response = sheetsClient.spreadsheets().values()
+                .get(spreadsheetId, RANGE)
+                .execute();
+        return response.getValues().size();
     }
 
     private List<CellData> buildBoxScoreRow(BoxScoreEntry boxScoreEntry) {
