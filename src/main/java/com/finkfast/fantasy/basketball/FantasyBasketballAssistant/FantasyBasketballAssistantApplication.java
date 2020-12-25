@@ -3,6 +3,7 @@ package com.finkfast.fantasy.basketball.FantasyBasketballAssistant;
 import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.adaptor.GoogleSheetsAdaptor;
 import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.adaptor.NBAStatsAdaptor;
 import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data.BoxScoreEntry;
+import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data.Game;
 import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data.Teams;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
@@ -21,24 +22,13 @@ public class FantasyBasketballAssistantApplication {
 		SpringApplication.run(FantasyBasketballAssistantApplication.class, args);
 		try {
 			GoogleSheetsAdaptor googleSheetsAdaptor = new GoogleSheetsAdaptor();
-			List<BoxScoreEntry> boxScoreEntryList = new ArrayList<>();
-			boxScoreEntryList.add(new BoxScoreEntry("Trae Young", LocalDate.of(2020,12,23), LocalTime.of(19,0), Teams.ATL,Teams.CHI,
-					true,25.9666666667,10,12,12,14,5,6,
-					37,6,7,0,0,4,0,30));
-			boxScoreEntryList.add(new BoxScoreEntry("Kevin Huerter", LocalDate.of(2020,12,23), LocalTime.of(19,0), Teams.ATL,Teams.CHI,
-					true,25.9666666667,10,12,12,14,5,6,
-					37,6,7,0,0,4,0,30));
-			boxScoreEntryList.add(new BoxScoreEntry("John Collins", LocalDate.of(2020,12,23), LocalTime.of(19,0), Teams.ATL,Teams.CHI,
-					true,25.9666666667,10,12,12,14,5,6,
-					37,6,7,0,0,4,0,30));
-			boxScoreEntryList.add(new BoxScoreEntry("Clint Capela", LocalDate.of(2020,12,23), LocalTime.of(19,0), Teams.ATL,Teams.CHI,
-					true,25.9666666667,10,12,12,14,5,6,
-					37,6,7,0,0,4,0,30));
-			googleSheetsAdaptor.writeBoxScores(boxScoreEntryList);
 
 			NBAStatsAdaptor nbaStatsAdaptor = new NBAStatsAdaptor();
-			nbaStatsAdaptor.fetchGamesFromDateRange(LocalDate.now().minusDays(3), LocalDate.now(), "2020");
-		} catch (IOException | GeneralSecurityException e) {
+			List<Game> gamesList = nbaStatsAdaptor.fetchGamesFromDateRange(LocalDate.of(2020, 12, 22), LocalDate.of(2020, 12, 22),
+					"2020");
+			List<BoxScoreEntry> boxScoreEntryList = nbaStatsAdaptor.fetchBoxScores(gamesList);
+			googleSheetsAdaptor.writeBoxScores(boxScoreEntryList);
+		} catch (IOException | GeneralSecurityException | InterruptedException e) {
 			e.printStackTrace();
 		}
 	}

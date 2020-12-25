@@ -31,13 +31,17 @@ public class GoogleSheetsAdaptor {
         sheetsClient = GoogleSheetsConfig.sheetsClient();
     }
 
-    public void writeBoxScores(List<BoxScoreEntry> boxScoreEntryList) throws IOException {
+    public void writeBoxScores(List<BoxScoreEntry> boxScoreEntryList) throws IOException, InterruptedException {
         List<Request> requests = new ArrayList<>();
         int rowsAppended = 0;
-        int maxRow = maxRow();
+        ValueRange existingValues = sheetsClient.spreadsheets().values()
+                .get(spreadsheetId, RANGE)
+                .execute();
+
+        int maxRow = existingValues.size();
 
         for(BoxScoreEntry boxScoreEntry : boxScoreEntryList) {
-            int row = getRow(boxScoreEntry.getPlayer(), boxScoreEntry.getDate(), rowsAppended);
+            int row = getRow(boxScoreEntry.getPlayer(), boxScoreEntry.getDate(), rowsAppended, existingValues);
             if(row >= maxRow) {
                 rowsAppended++;
             }
@@ -59,23 +63,13 @@ public class GoogleSheetsAdaptor {
                 .execute();
     }
 
-    private Integer getRow(String player, LocalDate date, int rowsAppended) throws IOException {
-        ValueRange response = sheetsClient.spreadsheets().values()
-                .get(spreadsheetId, RANGE)
-                .execute();
-        for(int i = 0; i < response.getValues().size(); i++) {
-            if(player.equals(response.getValues().get(i).get(0)) && date.toString().equals(response.getValues().get(i).get(1))) {
+    private Integer getRow(String player, LocalDate date, int rowsAppended, ValueRange existingValues) {
+        for(int i = 0; i < existingValues.getValues().size(); i++) {
+            if(player.equals(existingValues.getValues().get(i).get(0)) && date.toString().equals(existingValues.getValues().get(i).get(1))) {
                 return i;
             }
         }
-        return response.getValues().size() + rowsAppended;
-    }
-
-    private Integer maxRow() throws IOException {
-        ValueRange response = sheetsClient.spreadsheets().values()
-                .get(spreadsheetId, RANGE)
-                .execute();
-        return response.getValues().size();
+        return existingValues.getValues().size() + rowsAppended;
     }
 
     private List<CellData> buildBoxScoreRow(BoxScoreEntry boxScoreEntry) {
