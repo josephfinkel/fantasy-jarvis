@@ -1,6 +1,7 @@
 package com.finkfast.fantasy.basketball.FantasyBasketballAssistant;
 
 import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.adaptor.GoogleSheetsAdaptor;
+import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.adaptor.NBAStatsAdaptor;
 import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data.BoxScoreEntry;
 import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data.Teams;
 import org.springframework.boot.SpringApplication;
@@ -34,6 +35,9 @@ public class FantasyBasketballAssistantApplication {
 					true,25.9666666667,10,12,12,14,5,6,
 					37,6,7,0,0,4,0,30));
 			googleSheetsAdaptor.writeBoxScores(boxScoreEntryList);
+
+			NBAStatsAdaptor nbaStatsAdaptor = new NBAStatsAdaptor();
+			nbaStatsAdaptor.fetchGamesFromDateRange(LocalDate.now().minusDays(3), LocalDate.now(), "2020");
 		} catch (IOException | GeneralSecurityException e) {
 			e.printStackTrace();
 		}

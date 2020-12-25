@@ -35,6 +35,7 @@ public class GoogleSheetsAdaptor {
         List<Request> requests = new ArrayList<>();
         int rowsAppended = 0;
         int maxRow = maxRow();
+
         for(BoxScoreEntry boxScoreEntry : boxScoreEntryList) {
             int row = getRow(boxScoreEntry.getPlayer(), boxScoreEntry.getDate(), rowsAppended);
             if(row >= maxRow) {
@@ -51,6 +52,7 @@ public class GoogleSheetsAdaptor {
                             .setFields("userEnteredValue,userEnteredFormat.backgroundColor")));
 
         }
+
         BatchUpdateSpreadsheetRequest batchUpdateRequest = new BatchUpdateSpreadsheetRequest()
                 .setRequests(requests);
         sheetsClient.spreadsheets().batchUpdate(spreadsheetId, batchUpdateRequest)

@@ -9,14 +9,19 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.finkfast.fantasy.basketball</groupId>
-	<artifactId>BasketballScraper</artifactId>
+	<artifactId>FantasyBasketballAssistant</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>BasketballScraper</name>
-	<description>NBA Box Score Scraper</description>
+	<name>FantasyBasketballAssistant</name>
+	<description>Fantasy Basketball Assistant to put you Light Years ahead of your competition</description>
 	<properties>
 		<java.version>11</java.version>
 	</properties>
 	<dependencies>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-databind</artifactId>
+			<version>2.6.3</version>
+		</dependency>
 		<dependency>
 			<groupId>com.google.api-client</groupId>
 			<artifactId>google-api-client</artifactId>
