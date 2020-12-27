@@ -9,18 +9,29 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 	<groupId>com.finkfast.fantasy.basketball</groupId>
-	<artifactId>FantasyBasketballAssistant</artifactId>
+	<artifactId>fantasy-jarvis</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>FantasyBasketballAssistant</name>
-	<description>Fantasy Basketball Assistant to put you Light Years ahead of your competition</description>
+	<name>fantasy-jarvis</name>
+	<description>Fantasy concierge to put you Light Years ahead of your competition</description>
 	<properties>
 		<java.version>11</java.version>
+		<jackson.version>2.12.0</jackson.version>
 	</properties>
 	<dependencies>
 		<dependency>
 			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-annotations</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
+			<artifactId>jackson-core</artifactId>
+			<version>${jackson.version}</version>
+		</dependency>
+		<dependency>
+			<groupId>com.fasterxml.jackson.core</groupId>
 			<artifactId>jackson-databind</artifactId>
-			<version>2.12.0</version>
+			<version>${jackson.version}</version>
 		</dependency>
 		<dependency>
 			<groupId>com.google.api-client</groupId>

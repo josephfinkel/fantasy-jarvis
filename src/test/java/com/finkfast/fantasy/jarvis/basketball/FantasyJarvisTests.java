@@ -1,10 +1,10 @@
-package com.finkfast.fantasy.basketball.FantasyBasketballAssistant;
+package com.finkfast.fantasy.jarvis.basketball;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class BasketballScraperApplicationTests {
+class FantasyJarvisTests {
 
 	@Test
 	void contextLoads() {

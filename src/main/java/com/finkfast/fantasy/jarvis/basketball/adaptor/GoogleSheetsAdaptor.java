@@ -1,8 +1,7 @@
-package com.finkfast.fantasy.basketball.FantasyBasketballAssistant.adaptor;
+package com.finkfast.fantasy.jarvis.basketball.adaptor;
 
-import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.config.GoogleSheetsConfig;
-import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data.BoxScoreEntry;
-import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data.Teams;
+import com.finkfast.fantasy.jarvis.basketball.config.GoogleSheetsConfig;
+import com.finkfast.fantasy.jarvis.basketball.data.BoxScoreEntry;
 import com.google.api.services.sheets.v4.Sheets;
 import com.google.api.services.sheets.v4.model.*;
 
@@ -25,7 +24,7 @@ public class GoogleSheetsAdaptor {
     private final static LocalDate GOOGLE_SHEETS_DAY_ZERO = LocalDate.of(1899, 12, 30);
     private final static LocalTime MINUTE_ZERO = LocalTime.of(0, 0);
     private final static double MINUTES_IN_A_DAY = 1440;
-    private final static String RANGE = "Box Scores!A:S";
+    private final static String RANGE = "Box Scores!B:G";
 
     public GoogleSheetsAdaptor() throws IOException, GeneralSecurityException {
         sheetsClient = GoogleSheetsConfig.sheetsClient();
@@ -38,10 +37,10 @@ public class GoogleSheetsAdaptor {
                 .get(spreadsheetId, RANGE)
                 .execute();
 
-        int maxRow = existingValues.size();
+        int maxRow = existingValues.getValues().size();
 
         for(BoxScoreEntry boxScoreEntry : boxScoreEntryList) {
-            int row = getRow(boxScoreEntry.getPlayer(), boxScoreEntry.getDate(), rowsAppended, existingValues);
+            int row = getRow(boxScoreEntry.getPlayerId(), boxScoreEntry.getGameId(), rowsAppended, existingValues);
             if(row >= maxRow) {
                 rowsAppended++;
             }
@@ -63,9 +62,9 @@ public class GoogleSheetsAdaptor {
                 .execute();
     }
 
-    private Integer getRow(String player, LocalDate date, int rowsAppended, ValueRange existingValues) {
+    private Integer getRow(String playerId, String gameId, int rowsAppended, ValueRange existingValues) {
         for(int i = 0; i < existingValues.getValues().size(); i++) {
-            if(player.equals(existingValues.getValues().get(i).get(0)) && date.toString().equals(existingValues.getValues().get(i).get(1))) {
+            if(playerId.equals(existingValues.getValues().get(i).get(5)) && gameId.equals(existingValues.getValues().get(i).get(0))) {
                 return i;
             }
         }
@@ -77,6 +76,9 @@ public class GoogleSheetsAdaptor {
         values.add(new CellData()
                 .setUserEnteredValue(new ExtendedValue()
                         .setStringValue(boxScoreEntry.getPlayer())));
+        values.add(new CellData()
+                .setUserEnteredValue(new ExtendedValue()
+                        .setStringValue(boxScoreEntry.getGameId())));
         values.add(new CellData()
                 .setUserEnteredValue(new ExtendedValue()
                         .setNumberValue((double) ChronoUnit.DAYS.between(GOOGLE_SHEETS_DAY_ZERO, boxScoreEntry.getDate())))
@@ -91,6 +93,9 @@ public class GoogleSheetsAdaptor {
         values.add(new CellData()
                 .setUserEnteredValue(new ExtendedValue()
                         .setStringValue(boxScoreEntry.getOpponent().name())));
+        values.add(new CellData()
+                .setUserEnteredValue(new ExtendedValue()
+                        .setStringValue(boxScoreEntry.getPlayerId())));
         values.add(new CellData()
                 .setUserEnteredValue(new ExtendedValue()
                         .setNumberValue(boxScoreEntry.getStartedGame() ? 1.0 : 0.0)));

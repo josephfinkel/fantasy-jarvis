@@ -1,6 +1,6 @@
-package com.finkfast.fantasy.basketball.FantasyBasketballAssistant.controller;
+package com.finkfast.fantasy.jarvis.basketball.controller;
 
-import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.scheduler.LiveStatsScheduler;
+import com.finkfast.fantasy.jarvis.basketball.scheduler.LiveStatsScheduler;
 import org.springframework.web.bind.annotation.*;
 
 @RestController

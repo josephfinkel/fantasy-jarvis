@@ -1,10 +1,10 @@
-package com.finkfast.fantasy.basketball.FantasyBasketballAssistant.adaptor;
+package com.finkfast.fantasy.jarvis.basketball.adaptor;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data.BoxScoreEntry;
-import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data.Game;
-import com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data.Teams;
+import com.finkfast.fantasy.jarvis.basketball.data.BoxScoreEntry;
+import com.finkfast.fantasy.jarvis.basketball.data.Game;
+import com.finkfast.fantasy.jarvis.basketball.data.Teams;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpGet;
@@ -15,13 +15,13 @@ import java.io.IOException;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class NBAStatsAdaptor {
 
     private static final DateTimeFormatter FORMATTER = DateTimeFormatter.ofPattern("h:mm a z");
     private static final String NBA_BOX_SCORE_URL = "http://data.nba.net/prod/v1/{date}/{gameId}_boxscore.json";
+    private static final String NBA_PBP_URL = "http://data.nba.net/prod/v1/{date}/{gameId}_pbp_{quarter}.json";
     private static final String NBA_SCHEDULE_URL = "http://data.nba.net/prod/v2/{season}/schedule.json";
 
     public List<Game> fetchGamesFromDateRange(LocalDate startDate, LocalDate endDate, String season) throws IOException, InterruptedException {
@@ -44,22 +44,48 @@ public class NBAStatsAdaptor {
     public List<BoxScoreEntry> fetchBoxScores(List<Game> gamesList) throws IOException, InterruptedException {
         List<BoxScoreEntry> boxScoreEntryList = new ArrayList<>();
         for(Game game : gamesList) {
-            HttpResponse httpResponse = executeNBAGet(NBA_BOX_SCORE_URL.replace("{gameId}", game.getGameId()).replace("{date}",parseDate(game.getDate())));
-            JsonNode jsonNode = new ObjectMapper().readTree(EntityUtils.toString(httpResponse.getEntity()));
-            String homeTeamId = jsonNode.get("basicGameData").get("hTeam").get("teamId").asText();
-            jsonNode = jsonNode.get("stats").get("activePlayers");
-            int awayPlayerNumber = 0;
-            int homePlayerNumber = 0;
+            Map<String, Integer> technicalFoulMap = new HashMap<>();
+            for(int i = 1; i <= game.getPeriods(); i++) {
+                HttpResponse httpResponse = executeNBAGet(NBA_PBP_URL
+                        .replace("{gameId}", game.getGameId())
+                        .replace("{date}",parseDate(game.getDate()))
+                        .replace("{quarter}", String.valueOf(i)));
+                JsonNode jsonNode = new ObjectMapper().readTree(EntityUtils.toString(httpResponse.getEntity())).get("plays");
 
-            for(int i = 0; i < jsonNode.size(); i++) {
-                BoxScoreEntry boxScoreEntry = extractBoxScoreEntry(jsonNode.get(i), game.getDate(), game.getStartTime(), game.getAwayTeam(), game.getHomeTeam(), homeTeamId,
-                        awayPlayerNumber, homePlayerNumber);
-                boxScoreEntryList.add(boxScoreEntry);
-                if(boxScoreEntry.getTeam().equals(game.getHomeTeam())) {
-                    homePlayerNumber++;
+                for(int j = 0; j < jsonNode.size(); j++) {
+                    if(jsonNode.get(j).get("description").asText().contains("Technical") && jsonNode.get(j).get("eventMsgType").asText().equals("6")) {
+                        String playerId = jsonNode.get(j).get("personId").asText();
+                        if(technicalFoulMap.containsKey(playerId)) {
+                            technicalFoulMap.put(playerId, technicalFoulMap.get(playerId) + 1);
+                        }
+                        else {
+                            technicalFoulMap.put(playerId, 1);
+                        }
+                    }
                 }
-                else {
-                    awayPlayerNumber++;
+            }
+
+            HttpResponse httpResponse = executeNBAGet(NBA_BOX_SCORE_URL
+                    .replace("{gameId}", game.getGameId())
+                    .replace("{date}",parseDate(game.getDate())));
+            JsonNode jsonNode = new ObjectMapper().readTree(EntityUtils.toString(httpResponse.getEntity()));
+
+            String homeTeamId = jsonNode.get("basicGameData").get("hTeam").get("teamId").asText();
+            if(Objects.nonNull(jsonNode.get("stats"))) {
+                jsonNode = jsonNode.get("stats").get("activePlayers");
+                int awayPlayerNumber = 0;
+                int homePlayerNumber = 0;
+
+                for(int i = 0; i < jsonNode.size(); i++) {
+                    BoxScoreEntry boxScoreEntry = extractBoxScoreEntry(jsonNode.get(i), game.getGameId(), game.getDate(), game.getStartTime(), game.getAwayTeam(),
+                            game.getHomeTeam(), homeTeamId, awayPlayerNumber, homePlayerNumber, technicalFoulMap);
+                    boxScoreEntryList.add(boxScoreEntry);
+                    if(boxScoreEntry.getTeam().equals(game.getHomeTeam())) {
+                        homePlayerNumber++;
+                    }
+                    else {
+                        awayPlayerNumber++;
+                    }
                 }
             }
         }
@@ -69,7 +95,7 @@ public class NBAStatsAdaptor {
     private HttpResponse executeNBAGet(String uri) throws InterruptedException, IOException {
         HttpClient httpClient = HttpClients.createDefault();
         HttpGet httpGet = new HttpGet(uri);
-        Thread.sleep(5000);
+        Thread.sleep(10000);
         return httpClient.execute(httpGet);
     }
 
@@ -85,17 +111,20 @@ public class NBAStatsAdaptor {
         String gameId = game.get("gameId").asText();
         LocalTime time = LocalTime.parse(game.get("startTimeEastern").asText(), FORMATTER).minusHours(3);
         String gameUrl = game.get("gameUrlCode").asText();
-        return new Game(gameId, time, date, Teams.valueOf(gameUrl.substring(gameUrl.length() - 3)), Teams.valueOf(gameUrl.substring(gameUrl.length() - 6, gameUrl.length() - 3)));
+        Integer periods = game.get("period").get("current").asInt();
+        return new Game(gameId, time, date, Teams.valueOf(gameUrl.substring(gameUrl.length() - 3)), Teams.valueOf(gameUrl.substring(gameUrl.length() - 6, gameUrl.length() - 3)),
+                periods);
     }
 
     private String parseDate (LocalDate date) {
         return String.valueOf(date.getYear()) + String.valueOf(date.getMonthValue()) + String.valueOf(date.getDayOfMonth());
     }
 
-    private BoxScoreEntry extractBoxScoreEntry(JsonNode boxScore, LocalDate date, LocalTime time, Teams awayTeam, Teams homeTeam, String homeTeamId, int awayPlayerNumber,
-                                               int homePlayerNumber) {
+    private BoxScoreEntry extractBoxScoreEntry(JsonNode boxScore, String gameId, LocalDate date, LocalTime time, Teams awayTeam, Teams homeTeam, String homeTeamId,
+                                               int awayPlayerNumber, int homePlayerNumber, Map<String, Integer> technicalFoulMap) {
         String player = boxScore.get("firstName").asText() + " " + boxScore.get("lastName").asText();
         String teamId = boxScore.get("teamId").asText();
+        String playerId = boxScore.get("personId").asText();
         Teams team;
         Teams opponent;
         boolean startedGame;
@@ -124,8 +153,9 @@ public class NBAStatsAdaptor {
         Integer steals = boxScore.get("steals").asInt();
         Integer blocks = boxScore.get("blocks").asInt();
         Integer turnovers = boxScore.get("turnovers").asInt();
+        Integer technicalFouls = technicalFoulMap.getOrDefault(playerId, 0);
         Integer plusMinus = boxScore.get("plusMinus").asInt();
-        return new BoxScoreEntry(player, date, time, team, opponent, startedGame, minutesPlayed, fieldGoalsMade, fieldGoalsAttempted, freeThrowsMade, freeThrowsAttempted,
-                threePointersMade, threePointersAttempted, points, rebounds, assists, steals, blocks, turnovers, 0, plusMinus);
+        return new BoxScoreEntry(player, gameId, date, time, team, opponent, playerId, startedGame, minutesPlayed, fieldGoalsMade, fieldGoalsAttempted, freeThrowsMade,
+                freeThrowsAttempted, threePointersMade, threePointersAttempted, points, rebounds, assists, steals, blocks, turnovers, technicalFouls, plusMinus);
     }
 }

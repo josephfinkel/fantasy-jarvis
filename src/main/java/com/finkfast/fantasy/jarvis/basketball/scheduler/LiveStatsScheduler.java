@@ -1,4 +1,4 @@
-package com.finkfast.fantasy.basketball.FantasyBasketballAssistant.scheduler;
+package com.finkfast.fantasy.jarvis.basketball.scheduler;
 
 import org.springframework.stereotype.Component;
 

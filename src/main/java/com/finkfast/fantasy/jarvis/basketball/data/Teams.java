@@ -1,4 +1,4 @@
-package com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data;
+package com.finkfast.fantasy.jarvis.basketball.data;
 
 public enum Teams {
     ATL,

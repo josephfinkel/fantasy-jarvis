@@ -1,14 +1,16 @@
-package com.finkfast.fantasy.basketball.FantasyBasketballAssistant.data;
+package com.finkfast.fantasy.jarvis.basketball.data;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 
 public class BoxScoreEntry {
     private final String player;
+    private final String gameId;
     private final LocalDate date;
     private final LocalTime time;
     private final Teams team;
     private final Teams opponent;
+    private final String playerId;
     private final Boolean startedGame;
     private final Double minutesPlayed;
     private final Integer fieldGoalsMade;
@@ -26,14 +28,17 @@ public class BoxScoreEntry {
     private final Integer technicalFouls;
     private final Integer plusMinus;
 
-    public BoxScoreEntry(String player, LocalDate date, LocalTime time, Teams team, Teams opponent, Boolean startedGame, Double minutesPlayed, Integer fieldGoalsMade,
-                         Integer fieldGoalsAttempted, Integer freeThrowsMade, Integer freeThrowsAttempted, Integer threePointersMade, Integer threePointersAttempted,
-                         Integer points, Integer rebounds, Integer assists, Integer steals, Integer blocks, Integer turnovers, Integer technicalFouls, Integer plusMinus) {
+    public BoxScoreEntry(String player, String gameId, LocalDate date, LocalTime time, Teams team, Teams opponent, String playerId, Boolean startedGame, Double minutesPlayed,
+                         Integer fieldGoalsMade, Integer fieldGoalsAttempted, Integer freeThrowsMade, Integer freeThrowsAttempted, Integer threePointersMade,
+                         Integer threePointersAttempted, Integer points, Integer rebounds, Integer assists, Integer steals, Integer blocks, Integer turnovers,
+                         Integer technicalFouls, Integer plusMinus) {
         this.player = player;
+        this.gameId = gameId;
         this.date = date;
         this.time = time;
         this.team = team;
         this.opponent = opponent;
+        this.playerId = playerId;
         this.startedGame = startedGame;
         this.minutesPlayed = minutesPlayed;
         this.fieldGoalsMade = fieldGoalsMade;
@@ -134,5 +139,13 @@ public class BoxScoreEntry {
 
     public Integer getPlusMinus() {
         return plusMinus;
+    }
+
+    public String getGameId() {
+        return gameId;
+    }
+
+    public String getPlayerId() {
+        return playerId;
     }
 }
