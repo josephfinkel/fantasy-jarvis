@@ -1,1 +1,1 @@
-# FantasyBasketballAssistant
+# fantasy-jarvis
