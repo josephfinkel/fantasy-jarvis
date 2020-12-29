@@ -7,6 +7,8 @@ import com.finkfast.fantasy.jarvis.basketball.data.Game;
 import com.finkfast.fantasy.jarvis.basketball.data.Teams;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.config.CookieSpecs;
+import org.apache.http.client.config.RequestConfig;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.http.util.EntityUtils;
@@ -23,6 +25,15 @@ public class NBAStatsAdaptor {
     private static final String NBA_BOX_SCORE_URL = "http://data.nba.net/prod/v1/{date}/{gameId}_boxscore.json";
     private static final String NBA_PBP_URL = "http://data.nba.net/prod/v1/{date}/{gameId}_pbp_{quarter}.json";
     private static final String NBA_SCHEDULE_URL = "http://data.nba.net/prod/v2/{season}/schedule.json";
+
+    private final HttpClient httpClient;
+
+    public NBAStatsAdaptor() {
+        httpClient = HttpClients.custom()
+                .setDefaultRequestConfig(RequestConfig.custom()
+                        .setCookieSpec(CookieSpecs.STANDARD).build())
+                .build();
+    }
 
     public List<Game> fetchGamesFromDateRange(LocalDate startDate, LocalDate endDate, String season) throws IOException, InterruptedException {
         List<Game> gamesList = new ArrayList<>();
@@ -93,9 +104,9 @@ public class NBAStatsAdaptor {
     }
 
     private HttpResponse executeNBAGet(String uri) throws InterruptedException, IOException {
-        HttpClient httpClient = HttpClients.createDefault();
+        System.out.println(uri);
         HttpGet httpGet = new HttpGet(uri);
-        Thread.sleep(10000);
+        Thread.sleep(1000);
         return httpClient.execute(httpGet);
     }
 

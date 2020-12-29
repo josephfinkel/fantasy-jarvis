@@ -32,7 +32,7 @@ public class GoogleSheetsConfig {
      * If modifying these scopes, delete your previously saved tokens/ folder.
      */
     private static final List<String> SCOPES = Collections.singletonList(SheetsScopes.SPREADSHEETS);
-    private static final String CREDENTIALS_FILE_PATH = "/credentials.json";
+    private static final String CREDENTIALS_FILE_PATH = "/credentials/credentials.json";
 
     /**
      * Creates an authorized Credential object.

@@ -20,11 +20,20 @@ public class GoogleSheetsAdaptor {
     //TODO read from config
     final String spreadsheetId = "1pLZk8ul5aa7h1SZaxT65QQKKRX9jwGDvEWbF6AZQ5jc";
     final Integer boxScoreSheetId = 1923047521;
+    final Integer ownershipSheetId = 60364491;
+    final Integer leagueSize = 8;
+    final Integer scoringPeriods = 146;
 
+    private final static String BOX_SCORE_RANGE = "Box Scores!B:G";
+    private final static String CLAIM = "Claim";
+    private final static String CLAIM_RANGE = "Transaction History!J2:P";
+    private final static String DROP = "Drop";
     private final static LocalDate GOOGLE_SHEETS_DAY_ZERO = LocalDate.of(1899, 12, 30);
-    private final static LocalTime MINUTE_ZERO = LocalTime.of(0, 0);
     private final static double MINUTES_IN_A_DAY = 1440;
-    private final static String RANGE = "Box Scores!B:G";
+    private final static LocalTime MINUTE_ZERO = LocalTime.of(0, 0);
+    private final static String OWNERSHIP_RANGE = "Ownership!C:X";
+    private final static LocalDate SEASON_DAY_ZERO = LocalDate.of(2020, 12, 21);
+    private final static String TRADE_RANGE = "Transaction History!R2:X";
 
     public GoogleSheetsAdaptor() throws IOException, GeneralSecurityException {
         sheetsClient = GoogleSheetsConfig.sheetsClient();
@@ -33,14 +42,14 @@ public class GoogleSheetsAdaptor {
     public void writeBoxScores(List<BoxScoreEntry> boxScoreEntryList) throws IOException, InterruptedException {
         List<Request> requests = new ArrayList<>();
         int rowsAppended = 0;
-        ValueRange existingValues = sheetsClient.spreadsheets().values()
-                .get(spreadsheetId, RANGE)
+        ValueRange boxScoreValues = sheetsClient.spreadsheets().values()
+                .get(spreadsheetId, BOX_SCORE_RANGE)
                 .execute();
 
-        int maxRow = existingValues.getValues().size();
+        int maxRow = boxScoreValues.getValues().size();
 
         for(BoxScoreEntry boxScoreEntry : boxScoreEntryList) {
-            int row = getRow(boxScoreEntry.getPlayerId(), boxScoreEntry.getGameId(), rowsAppended, existingValues);
+            int row = getBoxScoreRow(boxScoreEntry.getPlayerId(), boxScoreEntry.getGameId(), rowsAppended, boxScoreValues);
             if(row >= maxRow) {
                 rowsAppended++;
             }
@@ -62,13 +71,58 @@ public class GoogleSheetsAdaptor {
                 .execute();
     }
 
-    private Integer getRow(String playerId, String gameId, int rowsAppended, ValueRange existingValues) {
-        for(int i = 0; i < existingValues.getValues().size(); i++) {
-            if(playerId.equals(existingValues.getValues().get(i).get(5)) && gameId.equals(existingValues.getValues().get(i).get(0))) {
+    public void writeOwnershipMatrix() throws IOException {
+        List<Request> requests = new ArrayList<>();
+        ValueRange ownershipValues = sheetsClient.spreadsheets().values()
+                .get(spreadsheetId, OWNERSHIP_RANGE)
+                .execute();
+
+        ValueRange claimValues = sheetsClient.spreadsheets().values()
+                .get(spreadsheetId, CLAIM_RANGE)
+                .execute();
+
+        ValueRange tradeValues = sheetsClient.spreadsheets().values()
+                .get(spreadsheetId, TRADE_RANGE)
+                .execute();
+
+        int row = getOwnershipRow(ownershipValues, ownershipValues.getValues().size());
+        if(row < 0) {
+            return;
+        }
+
+        for(int i = 0; i < leagueSize; i++) {
+            List<String> currentTeam = getCurrentTeam(ownershipValues, i, row - 1);
+            String teamName = String.valueOf(ownershipValues.getValues().get(row * leagueSize + i + 1).get(1));
+
+            for(int j = row; j <= ChronoUnit.DAYS.between(SEASON_DAY_ZERO, LocalDate.now()) && j <= scoringPeriods; j++) {
+                currentTeam = executeClaims(currentTeam, claimValues, j, teamName);
+                currentTeam = executeTrades(currentTeam, tradeValues, j, teamName);
+
+                requests.add(new Request()
+                        .setUpdateCells(new UpdateCellsRequest()
+                                .setStart(new GridCoordinate()
+                                        .setSheetId(ownershipSheetId)
+                                        .setRowIndex((j) * leagueSize + i + 1)
+                                        .setColumnIndex(5))
+                                .setRows(Collections.singletonList(
+                                        new RowData().setValues(buildOwnershipRow(currentTeam))))
+                                .setFields("userEnteredValue,userEnteredFormat.backgroundColor")));
+            }
+        }
+
+        BatchUpdateSpreadsheetRequest batchUpdateRequest = new BatchUpdateSpreadsheetRequest()
+                .setRequests(requests);
+        sheetsClient.spreadsheets().batchUpdate(spreadsheetId, batchUpdateRequest)
+                .execute();
+    }
+
+    private Integer getBoxScoreRow(String playerId, String gameId, int rowsAppended, ValueRange boxScoreValues) {
+        for(int i = 0; i < boxScoreValues.getValues().size(); i++) {
+            if(playerId.equals(boxScoreValues.getValues().get(i).get(5)) && gameId.equals(boxScoreValues.getValues().get(i).get(0))) {
                 return i;
             }
         }
-        return existingValues.getValues().size() + rowsAppended;
+        return boxScoreValues.getValues().size() + rowsAppended;
     }
 
     private List<CellData> buildBoxScoreRow(BoxScoreEntry boxScoreEntry) {
@@ -144,6 +198,59 @@ public class GoogleSheetsAdaptor {
         values.add(new CellData()
                 .setUserEnteredValue(new ExtendedValue()
                         .setNumberValue(Double.valueOf(boxScoreEntry.getPlusMinus()))));
+        return values;
+    }
+
+    private Integer getOwnershipRow(ValueRange ownershipValues, int size) {
+        for(int i = 2; i < size/leagueSize; i++) {
+            if(ownershipValues.getValues().get(i * leagueSize + 1).size() < 4) {
+                return i - 1;
+            }
+        }
+        return -1;
+    }
+
+    private List<String> getCurrentTeam(ValueRange ownershipValues, int team, int scoringPeriod) {
+        List<String> currentTeam = new ArrayList<>();
+        for(int i = 3; i < ownershipValues.getValues().get(scoringPeriod * leagueSize + team + 1).size(); i++) {
+            currentTeam.add(String.valueOf(ownershipValues.getValues().get(scoringPeriod * leagueSize + team + 1).get(i)));
+        }
+        return currentTeam;
+    }
+
+    private List<String> executeClaims(List<String> currentTeam, ValueRange claimValues, int scoringPeriod, String teamName) {
+        for(int i = claimValues.getValues().size() -1; i >= 0 && Integer.parseInt((String) claimValues.getValues().get(i).get(6)) <= scoringPeriod; i--) {
+            if(Integer.parseInt((String) claimValues.getValues().get(i).get(6)) == scoringPeriod && String.valueOf(claimValues.getValues().get(i).get(4)).equals(teamName)) {
+                if(String.valueOf(claimValues.getValues().get(i).get(3)).equals(CLAIM)) {
+                    currentTeam.add(String.valueOf(claimValues.getValues().get(i).get(0)));
+                }
+                else if(String.valueOf(claimValues.getValues().get(i).get(3)).equals(DROP)) {
+                    currentTeam.remove(String.valueOf(claimValues.getValues().get(i).get(0)));
+                }
+            }
+        }
+        return currentTeam;
+    }
+
+    private List<String> executeTrades(List<String> currentTeam, ValueRange tradeValues, int scoringPeriod, String teamName) {
+        for(int i = tradeValues.getValues().size() -1; i >= 0 && Integer.parseInt((String)  tradeValues.getValues().get(i).get(6)) <= scoringPeriod;  i--) {
+            if(Integer.parseInt((String) tradeValues.getValues().get(i).get(6)) == scoringPeriod && String.valueOf(tradeValues.getValues().get(i).get(4)).equals(teamName)) {
+                currentTeam.add(String.valueOf(tradeValues.getValues().get(i).get(0)));
+            }
+            else if(Integer.parseInt((String)  tradeValues.getValues().get(i).get(6)) == scoringPeriod && String.valueOf(tradeValues.getValues().get(i).get(3)).equals(teamName)) {
+                currentTeam.remove(String.valueOf(tradeValues.getValues().get(i).get(0)));
+            }
+        }
+        return currentTeam;
+    }
+
+    private List<CellData> buildOwnershipRow(List<String> currentTeam) {
+        List<CellData> values = new ArrayList<>();
+        for(String player : currentTeam) {
+            values.add(new CellData()
+                    .setUserEnteredValue(new ExtendedValue()
+                            .setStringValue(player)));
+        }
         return values;
     }
 }
