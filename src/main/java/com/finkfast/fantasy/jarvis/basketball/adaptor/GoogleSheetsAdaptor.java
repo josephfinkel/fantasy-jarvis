@@ -92,11 +92,15 @@ public class GoogleSheetsAdaptor {
 
         for(int i = 0; i < leagueSize; i++) {
             List<String> currentTeam = getCurrentTeam(ownershipValues, i, row - 1);
+            List<List<String>> transactionLists = new ArrayList<>();
+            transactionLists.add(currentTeam);
+            List<String> danglingClaims = new ArrayList<>();
+            transactionLists.add(danglingClaims);
             String teamName = String.valueOf(ownershipValues.getValues().get(row * leagueSize + i + 1).get(1));
 
             for(int j = row; j <= ChronoUnit.DAYS.between(SEASON_DAY_ZERO, LocalDate.now()) && j <= scoringPeriods; j++) {
-                currentTeam = executeClaims(currentTeam, claimValues, j, teamName);
-                currentTeam = executeTrades(currentTeam, tradeValues, j, teamName);
+                transactionLists = executeClaims(transactionLists, claimValues, j, teamName);
+                currentTeam = executeTrades(transactionLists, tradeValues, j, teamName);
 
                 requests.add(new Request()
                         .setUpdateCells(new UpdateCellsRequest()
@@ -218,23 +222,37 @@ public class GoogleSheetsAdaptor {
         return currentTeam;
     }
 
-    private List<String> executeClaims(List<String> currentTeam, ValueRange claimValues, int scoringPeriod, String teamName) {
+    private List<List<String>> executeClaims(List<List<String>> transactionLists, ValueRange claimValues, int scoringPeriod, String teamName) {
+        List<String> currentTeam = transactionLists.get(0);
+        List<String> danglingClaims = transactionLists.get(1);
+
         for(int i = claimValues.getValues().size() -1; i >= 0 && Integer.parseInt((String) claimValues.getValues().get(i).get(6)) <= scoringPeriod; i--) {
             if(Integer.parseInt((String) claimValues.getValues().get(i).get(6)) == scoringPeriod && String.valueOf(claimValues.getValues().get(i).get(4)).equals(teamName)) {
                 if(String.valueOf(claimValues.getValues().get(i).get(3)).equals(CLAIM)) {
                     currentTeam.add(String.valueOf(claimValues.getValues().get(i).get(0)));
                 }
                 else if(String.valueOf(claimValues.getValues().get(i).get(3)).equals(DROP)) {
-                    currentTeam.remove(String.valueOf(claimValues.getValues().get(i).get(0)));
+                    if(currentTeam.contains(String.valueOf(claimValues.getValues().get(i).get(0)))) {
+                        currentTeam.remove(String.valueOf(claimValues.getValues().get(i).get(0)));
+                    }
+                    else {
+                        danglingClaims.add(String.valueOf(claimValues.getValues().get(i).get(0)));
+                    }
                 }
             }
         }
-        return currentTeam;
+        return transactionLists;
     }
 
-    private List<String> executeTrades(List<String> currentTeam, ValueRange tradeValues, int scoringPeriod, String teamName) {
+    private List<String> executeTrades(List<List<String>> transactionLists, ValueRange tradeValues, int scoringPeriod, String teamName) {
+        List<String> currentTeam = transactionLists.get(0);
+        List<String> danglingClaims = transactionLists.get(1);
+
         for(int i = tradeValues.getValues().size() -1; i >= 0 && Integer.parseInt((String)  tradeValues.getValues().get(i).get(6)) <= scoringPeriod;  i--) {
-            if(Integer.parseInt((String) tradeValues.getValues().get(i).get(6)) == scoringPeriod && String.valueOf(tradeValues.getValues().get(i).get(4)).equals(teamName)) {
+            if(danglingClaims.contains(String.valueOf(tradeValues.getValues().get(i).get(0)))) {
+                danglingClaims.remove(String.valueOf(tradeValues.getValues().get(i).get(0)));
+            }
+            else if(Integer.parseInt((String) tradeValues.getValues().get(i).get(6)) == scoringPeriod && String.valueOf(tradeValues.getValues().get(i).get(4)).equals(teamName)) {
                 currentTeam.add(String.valueOf(tradeValues.getValues().get(i).get(0)));
             }
             else if(Integer.parseInt((String)  tradeValues.getValues().get(i).get(6)) == scoringPeriod && String.valueOf(tradeValues.getValues().get(i).get(3)).equals(teamName)) {
