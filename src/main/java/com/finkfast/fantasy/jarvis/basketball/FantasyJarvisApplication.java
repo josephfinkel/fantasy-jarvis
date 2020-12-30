@@ -20,13 +20,13 @@ public class FantasyJarvisApplication {
 		try {
 			GoogleSheetsAdaptor googleSheetsAdaptor = new GoogleSheetsAdaptor();
 
-			//NBAStatsAdaptor nbaStatsAdaptor = new NBAStatsAdaptor();
-			//List<Game> gamesList = nbaStatsAdaptor.fetchGamesFromDateRange(LocalDate.of(2020,12,22), LocalDate.now().minusDays(1), "2020");
-			//List<BoxScoreEntry> boxScoreEntryList = nbaStatsAdaptor.fetchBoxScores(gamesList);
-			//googleSheetsAdaptor.writeBoxScores(boxScoreEntryList);
+			NBAStatsAdaptor nbaStatsAdaptor = new NBAStatsAdaptor();
+			List<Game> gamesList = nbaStatsAdaptor.fetchGamesFromDateRange(LocalDate.of(2020,12,22), LocalDate.now().minusDays(1), "2020");
+			List<BoxScoreEntry> boxScoreEntryList = nbaStatsAdaptor.fetchBoxScores(gamesList);
+			googleSheetsAdaptor.writeBoxScores(boxScoreEntryList);
 
-			googleSheetsAdaptor.writeOwnershipMatrix();
-		} catch (IOException | GeneralSecurityException /*| InterruptedException*/ e) {
+			//googleSheetsAdaptor.writeOwnershipMatrix();
+		} catch (IOException | GeneralSecurityException | InterruptedException e) {
 			e.printStackTrace();
 		}
 	}

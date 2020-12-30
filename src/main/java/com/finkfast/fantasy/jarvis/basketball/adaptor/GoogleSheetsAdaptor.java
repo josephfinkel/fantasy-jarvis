@@ -24,7 +24,7 @@ public class GoogleSheetsAdaptor {
     final Integer leagueSize = 8;
     final Integer scoringPeriods = 146;
 
-    private final static String BOX_SCORE_RANGE = "Box Scores!B:G";
+    private final static String BOX_SCORE_RANGE = "Box Scores!C:H";
     private final static String CLAIM = "Claim";
     private final static String CLAIM_RANGE = "Transaction History!J2:P";
     private final static String DROP = "Drop";
@@ -58,7 +58,7 @@ public class GoogleSheetsAdaptor {
                             .setStart(new GridCoordinate()
                                     .setSheetId(boxScoreSheetId)
                                     .setRowIndex(row)
-                                    .setColumnIndex(0))
+                                    .setColumnIndex(1))
                             .setRows(Collections.singletonList(
                                     new RowData().setValues(buildBoxScoreRow(boxScoreEntry))))
                             .setFields("userEnteredValue,userEnteredFormat.backgroundColor")));

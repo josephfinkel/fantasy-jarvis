@@ -56,6 +56,7 @@ public class NBAStatsAdaptor {
         List<BoxScoreEntry> boxScoreEntryList = new ArrayList<>();
         for(Game game : gamesList) {
             Map<String, Integer> technicalFoulMap = new HashMap<>();
+            Map<String, Integer> doubleTechnicalFoulMap = new HashMap<>();
             for(int i = 1; i <= game.getPeriods(); i++) {
                 HttpResponse httpResponse = executeNBAGet(NBA_PBP_URL
                         .replace("{gameId}", game.getGameId())
@@ -71,6 +72,18 @@ public class NBAStatsAdaptor {
                         }
                         else {
                             technicalFoulMap.put(playerId, 1);
+                        }
+                    }
+                    if(jsonNode.get(j).get("description").asText().contains("Double Technical") && jsonNode.get(j).get("eventMsgType").asText().equals("6")) {
+                        String description = jsonNode.get(j).get("description").asText();
+                        String player = description.substring(description.indexOf(",") + 2);
+                        player = player.substring(0, player.indexOf("(") - 1);
+                        System.out.println("Double Technical for " + player);
+                        if(doubleTechnicalFoulMap.containsKey(player)) {
+                            doubleTechnicalFoulMap.put(player, technicalFoulMap.get(player) + 1);
+                        }
+                        else {
+                            doubleTechnicalFoulMap.put(player, 1);
                         }
                     }
                 }
@@ -89,7 +102,7 @@ public class NBAStatsAdaptor {
 
                 for(int i = 0; i < jsonNode.size(); i++) {
                     BoxScoreEntry boxScoreEntry = extractBoxScoreEntry(jsonNode.get(i), game.getGameId(), game.getDate(), game.getStartTime(), game.getAwayTeam(),
-                            game.getHomeTeam(), homeTeamId, awayPlayerNumber, homePlayerNumber, technicalFoulMap);
+                            game.getHomeTeam(), homeTeamId, awayPlayerNumber, homePlayerNumber, technicalFoulMap, doubleTechnicalFoulMap);
                     boxScoreEntryList.add(boxScoreEntry);
                     if(boxScoreEntry.getTeam().equals(game.getHomeTeam())) {
                         homePlayerNumber++;
@@ -132,7 +145,7 @@ public class NBAStatsAdaptor {
     }
 
     private BoxScoreEntry extractBoxScoreEntry(JsonNode boxScore, String gameId, LocalDate date, LocalTime time, Teams awayTeam, Teams homeTeam, String homeTeamId,
-                                               int awayPlayerNumber, int homePlayerNumber, Map<String, Integer> technicalFoulMap) {
+                                               int awayPlayerNumber, int homePlayerNumber, Map<String, Integer> technicalFoulMap,  Map<String, Integer> doubleTechnicalFoulMap) {
         String player = boxScore.get("firstName").asText() + " " + boxScore.get("lastName").asText();
         String teamId = boxScore.get("teamId").asText();
         String playerId = boxScore.get("personId").asText();
@@ -164,7 +177,7 @@ public class NBAStatsAdaptor {
         Integer steals = boxScore.get("steals").asInt();
         Integer blocks = boxScore.get("blocks").asInt();
         Integer turnovers = boxScore.get("turnovers").asInt();
-        Integer technicalFouls = technicalFoulMap.getOrDefault(playerId, 0);
+        Integer technicalFouls = technicalFoulMap.getOrDefault(playerId, 0) + doubleTechnicalFoulMap.getOrDefault(boxScore.get("lastName").asText(),0);
         Integer plusMinus = boxScore.get("plusMinus").asInt();
         return new BoxScoreEntry(player, gameId, date, time, team, opponent, playerId, startedGame, minutesPlayed, fieldGoalsMade, fieldGoalsAttempted, freeThrowsMade,
                 freeThrowsAttempted, threePointersMade, threePointersAttempted, points, rebounds, assists, steals, blocks, turnovers, technicalFouls, plusMinus);
