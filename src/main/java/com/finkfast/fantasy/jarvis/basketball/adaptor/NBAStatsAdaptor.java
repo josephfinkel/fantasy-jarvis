@@ -141,7 +141,7 @@ public class NBAStatsAdaptor {
     }
 
     private String parseDate (LocalDate date) {
-        return String.valueOf(date.getYear()) + String.valueOf(date.getMonthValue()) + String.valueOf(date.getDayOfMonth());
+        return date.toString().substring(0,4) + date.toString().substring(5,7) + date.toString().substring(8);
     }
 
     private BoxScoreEntry extractBoxScoreEntry(JsonNode boxScore, String gameId, LocalDate date, LocalTime time, Teams awayTeam, Teams homeTeam, String homeTeamId,

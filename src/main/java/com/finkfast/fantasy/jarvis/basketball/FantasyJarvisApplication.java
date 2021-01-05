@@ -7,8 +7,6 @@ import com.finkfast.fantasy.jarvis.basketball.data.Game;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
-import java.io.IOException;
-import java.security.GeneralSecurityException;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -20,13 +18,13 @@ public class FantasyJarvisApplication {
 		try {
 			GoogleSheetsAdaptor googleSheetsAdaptor = new GoogleSheetsAdaptor();
 
-			/*NBAStatsAdaptor nbaStatsAdaptor = new NBAStatsAdaptor();
+			NBAStatsAdaptor nbaStatsAdaptor = new NBAStatsAdaptor();
 			List<Game> gamesList = nbaStatsAdaptor.fetchGamesFromDateRange(LocalDate.now().minusDays(1), LocalDate.now().minusDays(1), "2020");
 			List<BoxScoreEntry> boxScoreEntryList = nbaStatsAdaptor.fetchBoxScores(gamesList);
-			googleSheetsAdaptor.writeBoxScores(boxScoreEntryList);*/
+			googleSheetsAdaptor.writeBoxScores(boxScoreEntryList);
 
 			googleSheetsAdaptor.writeOwnershipMatrix();
-		} catch (IOException | GeneralSecurityException /*| InterruptedException*/ e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}

@@ -31,7 +31,7 @@ public class GoogleSheetsAdaptor {
     private final static LocalDate GOOGLE_SHEETS_DAY_ZERO = LocalDate.of(1899, 12, 30);
     private final static double MINUTES_IN_A_DAY = 1440;
     private final static LocalTime MINUTE_ZERO = LocalTime.of(0, 0);
-    private final static String OWNERSHIP_RANGE = "Ownership!C:X";
+    private final static String OWNERSHIP_RANGE = "Ownership!L:AG";
     private final static LocalDate SEASON_DAY_ZERO = LocalDate.of(2020, 12, 21);
     private final static String TRADE_RANGE = "Transaction History!R2:X";
 
@@ -107,7 +107,7 @@ public class GoogleSheetsAdaptor {
                                 .setStart(new GridCoordinate()
                                         .setSheetId(ownershipSheetId)
                                         .setRowIndex((j) * leagueSize + i + 1)
-                                        .setColumnIndex(5))
+                                        .setColumnIndex(14))
                                 .setRows(Collections.singletonList(
                                         new RowData().setValues(buildOwnershipRow(currentTeam))))
                                 .setFields("userEnteredValue,userEnteredFormat.backgroundColor")));
